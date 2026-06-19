@@ -1,0 +1,17 @@
+# 输出文件（本地报告，体积大）
+trend-report-*.html
+outputs/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Node
+node_modules/
