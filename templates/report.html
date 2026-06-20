@@ -1,0 +1,657 @@
+<!--
+  ============================================================
+  multi-agent-trend-ai · HTML Report Template (v1.1.0)
+  ============================================================
+
+  Design: Editorial / journal style — warm cream background, serif
+  accents, monochrome data viz with 4 tier colors. All icons from
+  Lucide (24x24, stroke 2). Self-contained, no external CSS/JS
+  except Google Fonts.
+
+  Usage:
+    1. Replace each {{PLACEHOLDER}} with the corresponding value
+       from the skill's output data.
+    2. For repeating structures (bar rows, tier cards, topics), use
+       the {{LOOP_<NAME>}} markers and substitute the inner block
+       per data item.
+    3. Save as `trend-report-YYYY-MM-DD.html` in the current
+       working directory.
+
+  Placeholders
+  ------------
+  {{REPORT_DATE}}            e.g. "2026-06-20"
+  {{VOL_NUMBER}}             e.g. "Vol. 26"
+  {{ISSUE_NUMBER}}           e.g. "No. 25"
+  {{WEEK_LABEL}}             e.g. "第 25 周"
+  {{TIME_WINDOW}}            e.g. "7d"
+  {{START_DATE}}             e.g. "2026-06-13"
+  {{END_DATE}}               e.g. "2026-06-20"
+  {{TOTAL_KEYWORDS}}         e.g. "28"
+  {{NEW_KEYWORDS}}           e.g. "4"
+  {{SOURCE_STATUS}}          e.g. "1/7 active"
+  {{SKILL_VERSION}}          e.g. "v1.1.0"
+
+  {{TIER_S_COUNT}}           e.g. "3"
+  {{TIER_A_COUNT}}           e.g. "12"
+  {{TIER_B_COUNT}}           e.g. "8"
+  {{TIER_C_COUNT}}           e.g. "5"
+  {{TIER_S_PERCENT}}         e.g. "10.7"
+  {{TIER_A_PERCENT}}         e.g. "42.9"
+  {{TIER_B_PERCENT}}         e.g. "28.6"
+  {{TIER_C_PERCENT}}         e.g. "17.9"
+
+  {{LOOP_BAR_ROWS}}          28 × <div class="bar-row {tier}">…</div>
+  {{LOOP_S_TIER_CARDS}}      3 × <article class="tier-card s">…</article>
+  {{LOOP_A_TIER_ROWS}}       12 × <tr>…</tr>
+  {{LOOP_B_TIER_ROWS}}       8 × <tr>…</tr>
+  {{LOOP_C_TIER_ROWS}}       5 × <tr>…</tr>
+  {{LOOP_TOPICS}}            4 × <article class="topic [anti]">…</article>
+  {{LOOP_SOURCE_ROWS}}       8 × <tr>…</tr>
+  {{LOOP_FAILURES}}          3 × <div class="failure {fixed|pending}">…</div>
+  {{LOOP_SCHEDULE}}          5 × <div>…</div>
+
+  Bar row shape:
+    <div class="bar-row {s|a|b|c}">
+      <span class="bar-rank">{rank}</span>
+      <span class="bar-name">{name} [optional <span class="new">NEW</span>]</span>
+      <div class="bar-track"><div class="bar-fill" style="width: {pct}%"></div></div>
+      <span class="bar-score">{score}</span>
+    </div>
+
+  Tier card shape (S):
+    <article class="tier-card s">
+      <div class="tier-card-head">
+        <div class="tier-card-name">{name_zh} <span class="en">{name_en}</span></div>
+        <div class="tier-card-score num">{score}</div>
+      </div>
+      <div class="tier-card-meta">
+        <span class="chip cat-{category}">{category}</span>
+        <span class="chip lc-{lifecycle}">{lifecycle}</span>
+        <span class="chip">search {search_index}</span>
+        …
+      </div>
+      <div class="tier-card-body">
+        <p>{trend_summary}</p>
+        <p><strong>Evidence</strong> · <a class="ev-link" href="…">…</a> …</p>
+      </div>
+    </article>
+
+  Topic shape (anti adds class "anti" + accent color):
+    <article class="topic [anti]">
+      <div class="topic-body">
+        <div class="topic-head">
+          <span class="topic-num">T-{N} [· ANTI]</span>
+          <h3 class="topic-title">{title}</h3>
+          <span class="topic-score">heat · {predicted}</span>
+        </div>
+        <div class="topic-meta">
+          <span class="chip cat-{category}">{label} {tier}·{score}</span>
+          …
+        </div>
+        <div class="topic-section">
+          <h4>选题逻辑</h4>
+          <ul>
+            <li><strong>{pillar}</strong> · {detail}</li>
+            …
+          </ul>
+        </div>
+        <div class="topic-section">
+          <h4>大纲</h4><ul><li>…</li></ul>
+        </div>
+        <div class="topic-section">
+          <h4>Evidence</h4>
+          <ul class="evidence-list">
+            <li><a href="…">{title}</a></li>
+            …
+          </ul>
+        </div>
+      </div>
+    </article>
+
+  Source row shape:
+    <tr><td>{label} · {description}</td><td><span class="source-status status-{采集|待接入|降级|失败}">{text}</span></td></tr>
+
+  Failure shape:
+    <div class="failure {fixed|pending}">
+      <span class="failure-stage">Step {n}</span>
+      <span class="failure-status">{FIXED|PENDING}</span>
+      <span class="failure-body"><strong>{error_type}</strong> · {description}</span>
+    </div>
+
+  ============================================================
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agent 趋势 · {{REPORT_DATE}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  /* === Design Tokens — Light Editorial === */
+  :root {
+    --bg: #F7F4EC;
+    --bg-elev: #EFEBE0;
+    --bg-card: #FCFAF4;
+    --bg-hover: #F1ECE0;
+    --line: #D9D3C2;
+    --line-strong: #B8AF96;
+    --line-soft: #E6E0CE;
+    --text: #1A1815;
+    --text-mute: #5C564B;
+    --text-dim: #8B8474;
+    --text-faint: #B0A998;
+    --accent: #B33A3A;
+    --s: #4A3FB0;  --s-soft: #4A3FB014;  --s-tint: #EFECFA;
+    --a: #14579A;  --a-soft: #14579A14;  --a-tint: #E8EFF8;
+    --b: #2D6A1A;  --b-soft: #2D6A1A14;  --b-tint: #EBF3E5;
+    --c: #8A5510;  --c-soft: #8A551014;  --c-tint: #F7EEE0;
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+    --sp-5: 24px; --sp-6: clamp(24px, 3vw, 40px); --sp-7: 48px; --sp-8: 72px;
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--font-sans); line-height: 1.55;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+    background-image: radial-gradient(circle at 1px 1px, var(--line-soft) 1px, transparent 0);
+    background-size: 32px 32px; background-attachment: fixed;
+  }
+
+  .container { max-width: 1280px; margin: 0 auto; padding: var(--sp-7) var(--sp-5); }
+  .grid { display: grid; gap: var(--sp-5); }
+  .g-2 { grid-template-columns: 1fr 1fr; }
+  .g-4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 900px) { .g-2, .g-4 { grid-template-columns: 1fr; } }
+
+  h1, h2, h3, h4 { font-weight: 600; letter-spacing: -0.018em; margin: 0; }
+  .eyebrow { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-mute); }
+  .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .serif { font-family: var(--font-serif); }
+  .smallcaps { font-variant-caps: all-small-caps; letter-spacing: 0.1em; font-size: 11px; }
+
+  /* === Masthead === */
+  .masthead {
+    border-top: 3px double var(--text);
+    border-bottom: 1px solid var(--text);
+    padding: var(--sp-5) 0 var(--sp-4);
+    margin-bottom: var(--sp-6);
+    display: grid; grid-template-columns: 1fr auto;
+    align-items: end; gap: var(--sp-4);
+  }
+  .masthead-eyebrow { display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--sp-3); border-bottom: 1px solid var(--line); margin-bottom: var(--sp-4); }
+  .masthead-title { font-size: clamp(36px, 5vw, 56px); font-weight: 700; line-height: 1.02; letter-spacing: -0.04em; color: var(--text); }
+  .masthead-title em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--text-mute); }
+  .masthead-meta { text-align: right; font-family: var(--font-mono); font-size: 11px; color: var(--text-mute); line-height: 1.7; }
+  .masthead-meta .num { color: var(--text); }
+  .meta-bar { display: flex; gap: var(--sp-5); margin-top: var(--sp-4); padding-top: var(--sp-3); border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .meta-item { display: flex; align-items: center; gap: var(--sp-2); font-size: 12px; color: var(--text-mute); }
+  .meta-item svg { width: 14px; height: 14px; stroke: currentColor; flex-shrink: 0; }
+  .meta-item strong { color: var(--text); font-weight: 600; }
+
+  /* === Section === */
+  .section { margin-bottom: var(--sp-7); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--sp-4); padding-bottom: var(--sp-3); border-bottom: 1px solid var(--text); }
+  .section-title { font-size: 22px; letter-spacing: -0.02em; }
+  .section-title .num { color: var(--text-dim); font-size: 13px; margin-right: var(--sp-2); font-weight: 400; }
+
+  /* === Stat Card === */
+  .stat {
+    background: var(--bg-card); border: 1px solid var(--line);
+    padding: var(--sp-5); position: relative; overflow: hidden;
+  }
+  .stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: currentColor; }
+  .stat .num { font-size: 56px; font-weight: 600; letter-spacing: -0.035em; line-height: 1; color: var(--text); }
+  .stat .label { font-family: var(--font-serif); font-style: italic; font-size: 14px; color: var(--text-mute); margin-top: var(--sp-2); display: flex; align-items: center; gap: var(--sp-2); }
+  .stat .glyph { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; }
+  .stat .glyph svg { width: 32px; height: 32px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+  .stat.s { color: var(--s); }
+  .stat.a { color: var(--a); }
+  .stat.b { color: var(--b); }
+  .stat.c { color: var(--c); }
+
+  /* === Bar Chart === */
+  .chart { background: var(--bg-card); border: 1px solid var(--line); padding: var(--sp-5); }
+  .chart-legend { display: flex; gap: var(--sp-5); margin-bottom: var(--sp-4); padding-bottom: var(--sp-3); border-bottom: 1px dashed var(--line); flex-wrap: wrap; }
+  .chart-legend-item { display: flex; align-items: center; gap: var(--sp-2); font-size: 11px; font-family: var(--font-mono); color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.06em; }
+  .chart-legend-item::before { content: ''; width: 18px; height: 2px; background: currentColor; }
+  .chart-legend-item.s { color: var(--s); } .chart-legend-item.a { color: var(--a); }
+  .chart-legend-item.b { color: var(--b); } .chart-legend-item.c { color: var(--c); }
+
+  .bar-row { display: grid; grid-template-columns: 36px 150px 1fr 60px; align-items: center; gap: var(--sp-3); padding: 6px 0; font-size: 13px; border-bottom: 1px dotted var(--line-soft); }
+  .bar-row:last-child { border-bottom: none; }
+  .bar-rank { font-family: var(--font-mono); color: var(--text-dim); font-size: 10.5px; text-align: right; }
+  .bar-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-name .new { color: var(--c); margin-left: 4px; font-size: 9.5px; font-family: var(--font-mono); letter-spacing: 0.05em; }
+  .bar-track { height: 6px; background: var(--bg-elev); border: 1px solid var(--line-soft); position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; transition: width 0.8s var(--ease); }
+  .bar-row.s .bar-fill { background: var(--s); }
+  .bar-row.a .bar-fill { background: var(--a); }
+  .bar-row.b .bar-fill { background: var(--b); }
+  .bar-row.c .bar-fill { background: var(--c); }
+  .bar-score { font-family: var(--font-mono); font-weight: 500; text-align: right; color: var(--text); }
+  .bar-row.s .bar-score { color: var(--s); } .bar-row.a .bar-score { color: var(--a); }
+  .bar-row.b .bar-score { color: var(--b); } .bar-row.c .bar-score { color: var(--c); }
+
+  /* === Tier Detail === */
+  .tier-block { display: grid; grid-template-columns: 1fr; gap: var(--sp-3); }
+  .tier-card {
+    background: var(--bg-card); border: 1px solid var(--line);
+    padding: var(--sp-5);
+    transition: transform 0.25s var(--ease), border-color 0.25s var(--ease), box-shadow 0.25s var(--ease);
+  }
+  .tier-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26, 24, 21, 0.06); }
+  .tier-card-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--sp-3); padding-bottom: var(--sp-3); border-bottom: 1px solid var(--line-soft); }
+  .tier-card-name { font-size: 19px; font-weight: 600; color: var(--text); letter-spacing: -0.015em; }
+  .tier-card-name .en { font-family: var(--font-serif); font-style: italic; color: var(--text-mute); font-weight: 400; font-size: 15px; margin-left: var(--sp-2); }
+  .tier-card-score { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+  .tier-card.s .tier-card-score { color: var(--s); } .tier-card.a .tier-card-score { color: var(--a); }
+  .tier-card.b .tier-card-score { color: var(--b); } .tier-card.c .tier-card-score { color: var(--c); }
+  .tier-card-body { color: var(--text); font-size: 14px; line-height: 1.7; }
+  .tier-card-body p { margin: var(--sp-2) 0; color: var(--text-mute); }
+  .tier-card-body p strong { color: var(--text); font-weight: 600; }
+  .tier-card-meta { display: flex; gap: var(--sp-2); margin: var(--sp-3) 0; flex-wrap: wrap; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 10.5px; font-family: var(--font-mono); border: 1px solid var(--line); color: var(--text-mute); background: var(--bg-card); }
+  .chip.cat-concept { color: var(--s); border-color: var(--s); background: var(--s-tint); }
+  .chip.cat-framework { color: var(--a); border-color: var(--a); background: var(--a-tint); }
+  .chip.cat-application { color: var(--b); border-color: var(--b); background: var(--b-tint); }
+  .chip.cat-emerging { color: var(--c); border-color: var(--c); background: var(--c-tint); }
+  .chip.lc-growth { color: #2D6A1A; border-color: #2D6A1A50; }
+  .chip.lc-maturity { color: #14579A; border-color: #14579A50; }
+  .chip.lc-introduction { color: #6B3FA0; border-color: #6B3FA050; }
+  .chip.new { color: var(--accent); border-color: var(--accent); background: #FCEEEC; }
+  .ev-link { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--line-strong); transition: color 0.2s, border-color 0.2s; }
+  .ev-link:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* === Table === */
+  .tbl { width: 100%; border-collapse: collapse; background: var(--bg-card); border: 1px solid var(--line); font-size: 13px; }
+  .tbl th { text-align: left; padding: var(--sp-3) var(--sp-4); background: var(--bg-elev); font-family: var(--font-mono); font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-mute); border-bottom: 1px solid var(--text); }
+  .tbl td { padding: var(--sp-3) var(--sp-4); border-bottom: 1px dotted var(--line-soft); vertical-align: top; }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl tr:hover { background: var(--bg-hover); }
+  .tbl .rank { color: var(--text-dim); font-family: var(--font-mono); font-size: 10.5px; }
+  .tbl .name { font-weight: 500; }
+  .tbl .score { font-family: var(--font-mono); text-align: right; font-weight: 500; }
+  .tbl .score.s { color: var(--s); } .tbl .score.a { color: var(--a); }
+  .tbl .score.b { color: var(--b); } .tbl .score.c { color: var(--c); }
+  .tbl .signal { color: var(--text-mute); font-size: 12.5px; }
+
+  /* === Topic Card === */
+  .topic { background: var(--bg-card); border: 1px solid var(--line); padding: 0; margin-bottom: var(--sp-4); position: relative; }
+  .topic::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 3px; background: var(--a); }
+  .topic.anti::before { background: var(--accent); }
+  .topic-body { padding: var(--sp-5); }
+  .topic-head { display: flex; align-items: baseline; gap: var(--sp-3); margin-bottom: var(--sp-3); flex-wrap: wrap; }
+  .topic-num { font-family: var(--font-mono); color: var(--text-dim); font-size: 11px; letter-spacing: 0.1em; }
+  .topic.anti .topic-num { color: var(--accent); }
+  .topic-title { font-size: 20px; font-weight: 600; letter-spacing: -0.015em; color: var(--text); flex: 1; min-width: 200px; line-height: 1.3; }
+  .topic-score { font-family: var(--font-mono); font-size: 11px; padding: 4px 10px; border: 1px solid currentColor; color: var(--a); letter-spacing: 0.05em; }
+  .topic.anti .topic-score { color: var(--accent); }
+  .topic-meta { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+  .topic-section { margin-top: var(--sp-3); padding-top: var(--sp-3); border-top: 1px dashed var(--line-soft); }
+  .topic-section h4 { font-family: var(--font-mono); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-mute); margin-bottom: var(--sp-2); }
+  .topic-section ul { margin: 0; padding-left: 18px; color: var(--text-mute); font-size: 13px; line-height: 1.7; }
+  .topic-section li { margin: 2px 0; }
+  .topic-section li strong { color: var(--text); font-weight: 600; }
+  .evidence-list { list-style: none; padding: 0; }
+  .evidence-list li { padding: var(--sp-2) 0; border-bottom: 1px dotted var(--line-soft); font-size: 12.5px; display: flex; align-items: baseline; gap: var(--sp-2); }
+  .evidence-list li:last-child { border-bottom: none; }
+  .evidence-list li::before { content: '→'; color: var(--text-dim); font-family: var(--font-mono); }
+  .evidence-list a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--line-strong); transition: color 0.2s, border-color 0.2s; }
+  .evidence-list a:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* === Source Table === */
+  .source-status { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 10.5px; }
+  .source-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-ok { color: var(--b); } .status-fail { color: var(--accent); } .status-skip { color: var(--text-dim); }
+
+  /* === Failure === */
+  .failure { display: grid; grid-template-columns: 80px 100px 1fr; gap: var(--sp-4); padding: var(--sp-3) 0; border-bottom: 1px dotted var(--line-soft); font-size: 13px; align-items: baseline; }
+  .failure:last-child { border-bottom: none; }
+  .failure-stage { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-mute); }
+  .failure-status { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; }
+  .failure.fixed .failure-status { color: var(--b); } .failure.pending .failure-status { color: var(--accent); }
+  .failure-body { color: var(--text-mute); }
+  .failure-body strong { color: var(--text); font-weight: 600; }
+
+  /* === Schedule === */
+  .schedule { display: grid; grid-template-columns: 70px 1fr; gap: var(--sp-2) var(--sp-4); font-size: 13px; }
+  .schedule-day { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-mute); padding-top: 2px; }
+  .schedule-content { color: var(--text-mute); padding-bottom: var(--sp-2); border-bottom: 1px dotted var(--line-soft); }
+  .schedule-content:last-of-type { border-bottom: none; }
+  .schedule-content strong { color: var(--text); font-weight: 600; }
+
+  /* === Footer === */
+  footer { margin-top: var(--sp-7); padding-top: var(--sp-4); border-top: 3px double var(--text); display: grid; grid-template-columns: 1fr auto; gap: var(--sp-4); font-size: 10.5px; font-family: var(--font-mono); color: var(--text-dim); }
+
+  /* === Animation === */
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .rise { animation: rise 0.5s var(--ease) backwards; }
+  .rise:nth-child(1) { animation-delay: 0.04s; } .rise:nth-child(2) { animation-delay: 0.08s; }
+  .rise:nth-child(3) { animation-delay: 0.12s; } .rise:nth-child(4) { animation-delay: 0.16s; }
+  .rise:nth-child(5) { animation-delay: 0.20s; } .rise:nth-child(6) { animation-delay: 0.24s; }
+  @media (prefers-reduced-motion: reduce) { .rise, .bar-fill { animation: none; transition: none; } }
+
+  @media print { body { background: white; } .topic:hover, .tier-card:hover { transform: none; box-shadow: none; } }
+  ::selection { background: var(--text); color: var(--bg); }
+</style>
+</head>
+<body>
+
+<!-- ===== Lucide SVG Icon Defs (24x24, stroke 2) — Shared ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.287 1.288L3 12l5.8 1.9a2 2 0 0 1 1.288 1.287L12 21l1.9-5.8a2 2 0 0 1 1.287-1.288L21 12l-5.8-1.9a2 2 0 0 1-1.288-1.287Z"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></symbol>
+    <symbol id="i-rocket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></symbol>
+    <symbol id="i-sprout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19.2 2.96c1.4 7.9-1.5 12.5-7.2 17.04Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" x2="16" y1="12" y2="12"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="16" x2="8" y1="9" y2="9"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></symbol>
+    <symbol id="i-rss" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" x2="7.01" y1="7" y2="7"/></symbol>
+  </defs>
+</svg>
+
+<div class="container">
+
+  <!-- ===== MASTHEAD ===== -->
+  <header class="masthead rise">
+    <div class="masthead-eyebrow">
+      <span class="num smallcaps" style="color: var(--text)">{{VOL_NUMBER}} · {{ISSUE_NUMBER}}</span>
+      <span class="num smallcaps">Weekly Research Brief · multi-agent-trend-ai</span>
+    </div>
+    <div>
+      <h1 class="masthead-title">AI Agent 趋势<br><em>微信生态 · {{WEEK_LABEL}}</em></h1>
+    </div>
+    <div class="masthead-meta">
+      <div class="num">{{REPORT_DATE}}</div>
+      <div>Reporting window · {{TIME_WINDOW}}</div>
+      <div>Coverage · {{TOTAL_KEYWORDS}} keywords</div>
+      <div>Sources · {{SOURCE_STATUS}}</div>
+    </div>
+    <div style="grid-column: 1/-1">
+      <div class="meta-bar">
+        <span class="meta-item"><svg><use href="#i-cal"/></svg><strong>{{TIME_WINDOW}}</strong> {{START_DATE}} → {{END_DATE}}</span>
+        <span class="meta-item"><svg><use href="#i-target"/></svg><strong>{{TARGET_PLATFORM}}</strong></span>
+        <span class="meta-item"><svg><use href="#i-chart"/></svg><strong>{{TOTAL_KEYWORDS}}</strong> 关键词</span>
+        <span class="meta-item"><svg><use href="#i-spark"/></svg><strong>{{NEW_KEYWORDS}}</strong> 新增词条</span>
+        <span class="meta-item"><svg><use href="#i-doc"/></svg><strong>{{SKILL_VERSION}}</strong> skill</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== TIER STATS ===== -->
+  <section class="section rise">
+    <div class="section-head">
+      <h2 class="section-title"><span class="num">01 —</span>梯队分布</h2>
+      <span class="eyebrow">S ≥ 85 · A 70-84.9 · B 55-69.9 · C &lt; 55</span>
+    </div>
+    <div class="grid g-4">
+      <div class="stat s rise">
+        <div class="num">{{TIER_S_COUNT}}</div>
+        <div class="label"><span class="glyph"><svg><use href="#i-trophy"/></svg></span>S · 核心热点</div>
+      </div>
+      <div class="stat a rise">
+        <div class="num">{{TIER_A_COUNT}}</div>
+        <div class="label"><span class="glyph"><svg><use href="#i-rocket"/></svg></span>A · 高潜热点</div>
+      </div>
+      <div class="stat b rise">
+        <div class="num">{{TIER_B_COUNT}}</div>
+        <div class="label"><span class="glyph"><svg><use href="#i-sprout"/></svg></span>B · 稳定增长</div>
+      </div>
+      <div class="stat c rise">
+        <div class="num">{{TIER_C_COUNT}}</div>
+        <div class="label"><span class="glyph"><svg><use href="#i-leaf"/></svg></span>C · 长尾观察</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BAR CHART ===== -->
+  <section class="section rise">
+    <div class="section-head">
+      <h2 class="section-title"><span class="num">02 —</span>热度分布</h2>
+      <span class="eyebrow">heat_score · 加权 = 0.30·search + 0.30·mention + 0.20·article + 0.20·engage</span>
+    </div>
+    <div class="chart">
+      <div class="chart-legend">
+        <span class="chart-legend-item s">S 核心</span>
+        <span class="chart-legend-item a">A 高潜</span>
+        <span class="chart-legend-item b">B 增长</span>
+        <span class="chart-legend-item c">C 观察</span>
+      </div>
+      <div>
+        <!--LOOP_BAR_ROWS-->
+        <div class="bar-row s"><span class="bar-rank">001</span><span class="bar-name">MCP协议</span><div class="bar-track"><div class="bar-fill" style="width: 92%"></div></div><span class="bar-score">92.0</span></div>
+        <div class="bar-row s"><span class="bar-rank">002</span><span class="bar-name">Multi-Agent</span><div class="bar-track"><div class="bar-fill" style="width: 88%"></div></div><span class="bar-score">88.0</span></div>
+        <div class="bar-row s"><span class="bar-rank">003</span><span class="bar-name">Vibe Coding</span><div class="bar-track"><div class="bar-fill" style="width: 86%"></div></div><span class="bar-score">86.0</span></div>
+        <!--/LOOP_BAR_ROWS-->
+        <!-- Repeat for all 28 keywords with tier class s|a|b|c -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== S TIER DETAIL ===== -->
+  <section class="section rise">
+    <div class="section-head">
+      <h2 class="section-title"><span class="num">03 —</span>S 梯队 · 核心热点</h2>
+      <span class="eyebrow"><svg style="width:12px;height:12px;vertical-align:-2px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#i-trophy"/></svg> {{TIER_S_COUNT}} keywords</span>
+    </div>
+    <div class="tier-block">
+      <!--LOOP_S_TIER_CARDS-->
+      <article class="tier-card s">
+        <div class="tier-card-head">
+          <div class="tier-card-name">MCP协议 <span class="en">Model Context Protocol</span></div>
+          <div class="tier-card-score num">92.0</div>
+        </div>
+        <div class="tier-card-meta">
+          <span class="chip cat-concept">concept</span>
+          <span class="chip lc-maturity">maturity</span>
+          <span class="chip">search 18,500</span>
+          <span class="chip">mention 12,000</span>
+          <span class="chip">article 450</span>
+          <span class="chip">engage 0.082</span>
+        </div>
+        <div class="tier-card-body">
+          <p>2025 年大爆发，2026 年进入成熟期。Anthropic 主推的"AI 世界 USB-C 接口"标准已被腾讯/华为/小米/微信 生态采用。</p>
+          <p><strong>Evidence</strong> · <a class="ev-link" href="#">URL1</a> · <a class="ev-link" href="#">URL2</a></p>
+        </div>
+      </article>
+      <!--/LOOP_S_TIER_CARDS-->
+    </div>
+  </section>
+
+  <!-- ===== A TIER TABLE ===== -->
+  <section class="section rise">
+    <div class="section-head">
+      <h2 class="section-title"><span class="num">04 —</span>A 梯队 · 高潜热点</h2>
+      <span class="eyebrow"><svg style="width:12px;height:12px;vertical-align:-2px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#i-rocket"/></svg> {{TIER_A_COUNT}} keywords</span>
+    </div>
+    <table class="tbl">
+      <thead><tr><th style="width:40px">#</th><th>关键词</th><th style="width:70px;text-align:right">分数</th><th style="width:90px">层级</th><th style="width:110px">生命周期</th><th>关键信号</th></tr></thead>
+      <tbody>
+        <!--LOOP_A_TIER_ROWS-->
+        <tr><td class="rank">01</td><td class="name">Claude Code</td><td class="score a">82.0</td><td><span class="chip cat-framework">framework</span></td><td><span class="chip lc-growth">growth</span></td><td class="signal">Anthropic 终端 Agent 工具</td></tr>
+        <!--/LOOP_A_TIER_ROWS-->
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ===== B & C TIER TABLES ===== -->
+  <section class="section rise">
+    <div class="grid g-2">
+      <div>
+        <div class="section-head">
+          <h2 class="section-title"><span class="num">05 —</span>B 梯队 · 稳定增长</h2>
+          <span class="eyebrow">{{TIER_B_COUNT}} keywords</span>
+        </div>
+        <table class="tbl">
+          <thead><tr><th style="width:40px">#</th><th>关键词</th><th style="width:60px;text-align:right">分数</th><th>信号</th></tr></thead>
+          <tbody>
+            <!--LOOP_B_TIER_ROWS-->
+            <tr><td class="rank">01</td><td class="name">企业级 Agent</td><td class="score b">68.0</td><td class="signal">RaaS / AgentDevOps / GraphRAG 四大趋势</td></tr>
+            <!--/LOOP_B_TIER_ROWS-->
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div class="section-head">
+          <h2 class="section-title"><span class="num">06 —</span>C 梯队 · 长尾观察</h2>
+          <span class="eyebrow">{{TIER_C_COUNT}} keywords</span>
+        </div>
+        <table class="tbl">
+          <thead><tr><th style="width:40px">#</th><th>关键词</th><th style="width:60px;text-align:right">分数</th><th>信号</th></tr></thead>
+          <tbody>
+            <!--LOOP_C_TIER_ROWS-->
+            <tr><td class="rank">01</td><td class="name">具身智能</td><td class="score c">52.0</td><td class="signal">Physical AI 概念，2026 持续增长</td></tr>
+            <!--/LOOP_C_TIER_ROWS-->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TOPIC SUGGESTIONS ===== -->
+  <section class="section rise">
+    <div class="section-head">
+      <h2 class="section-title"><span class="num">07 —</span>选题清单</h2>
+      <span class="eyebrow">4 topics · 1 anti-consensus</span>
+    </div>
+    <!--LOOP_TOPICS-->
+    <article class="topic [anti]">
+      <div class="topic-body">
+        <div class="topic-head">
+          <span class="topic-num">T-{N} [· ANTI]</span>
+          <h3 class="topic-title">{title}</h3>
+          <span class="topic-score">heat · {predicted}</span>
+        </div>
+        <div class="topic-meta">
+          <span class="chip cat-{category}">{label} {tier}·{score}</span>
+          <!-- additional chips for keyword combos, platform, format -->
+        </div>
+        <div class="topic-section">
+          <h4>选题逻辑</h4>
+          <ul>
+            <li><strong>{pillar}</strong> · {detail}</li>
+            <!-- 4 bullets: 热度支撑 / 生命周期互补 / 数据信号 / 受众基础 -->
+          </ul>
+        </div>
+        <div class="topic-section">
+          <h4>大纲</h4><ul><li>章节 {n} · {section}</li></ul>
+        </div>
+        <div class="topic-section">
+          <h4>Evidence</h4>
+          <ul class="evidence-list">
+            <li><a href="{url}">{title}</a></li>
+          </ul>
+        </div>
+      </div>
+    </article>
+    <!--/LOOP_TOPICS-->
+  </section>
+
+  <!-- ===== SOURCES & FAILURES ===== -->
+  <section class="section rise">
+    <div class="grid g-2">
+      <div>
+        <div class="section-head">
+          <h2 class="section-title"><span class="num">08 —</span>公众号生态信号源</h2>
+        </div>
+        <table class="tbl">
+          <thead><tr><th>信号源</th><th style="width:90px">状态</th></tr></thead>
+          <tbody>
+            <!--LOOP_SOURCE_ROWS-->
+            <tr><td><strong>{label}</strong> · {description}</td><td><span class="source-status status-{采集|待接入|降级|失败}">{text}</span></td></tr>
+            <!--/LOOP_SOURCE_ROWS-->
+          </tbody>
+        </table>
+        <p style="color: var(--text-mute); font-size: 12px; margin-top: var(--sp-3)">
+          <strong style="color: var(--text)">置信度</strong> · {level} · {explanation}
+        </p>
+      </div>
+      <div>
+        <div class="section-head">
+          <h2 class="section-title"><span class="num">09 —</span>失败记录</h2>
+        </div>
+        <div>
+          <!--LOOP_FAILURES-->
+          <div class="failure {fixed|pending}">
+            <span class="failure-stage">Step {n}</span>
+            <span class="failure-status">{FIXED|PENDING}</span>
+            <span class="failure-body"><strong>{error_type}</strong> · {description}</span>
+          </div>
+          <!--/LOOP_FAILURES-->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PUBLISH SCHEDULE ===== -->
+  <section class="section rise">
+    <div class="section-head">
+      <h2 class="section-title"><span class="num">10 —</span>发布节奏</h2>
+      <span class="eyebrow">10-day cadence</span>
+    </div>
+    <div class="grid g-2">
+      <div>
+        <h4 style="font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-mute); margin-bottom: var(--sp-3)">
+          <svg style="width:12px;height:12px;vertical-align:-2px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#i-doc"/></svg>
+          公众号（深度长文）
+        </h4>
+        <div class="schedule">
+          <!--LOOP_SCHEDULE-->
+          <span class="schedule-day">DAY {n}</span>
+          <span class="schedule-content"><strong>{topic_id}</strong> · {description}</span>
+          <!--/LOOP_SCHEDULE-->
+        </div>
+      </div>
+      <div>
+        <h4 style="font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-mute); margin-bottom: var(--sp-3)">
+          <svg style="width:12px;height:12px;vertical-align:-2px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#i-zap"/></svg>
+          视频号（短视频）
+        </h4>
+        <div class="schedule">
+          <span class="schedule-day">TIME</span>
+          <span class="schedule-content"><strong>最佳发布</strong> · 周一至周五 12:00-13:00 / 19:00-21:00</span>
+          <span class="schedule-day">HOOK</span>
+          <span class="schedule-content"><strong>前 3 秒</strong> · 必须含核心冲突（数字 / 问句 / 反共识）</span>
+          <span class="schedule-day">TAGS</span>
+          <span class="schedule-content"><strong>必带</strong> · #AI Agent #公众号 #视频号</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div>
+      <div>trend-report-{{REPORT_DATE}}.html</div>
+      <div>multi-agent-trend-ai {{SKILL_VERSION}} · {{TOTAL_KEYWORDS}} keywords · 4 topics</div>
+    </div>
+    <div>
+      <div>Generated {{REPORT_DATE}}</div>
+      <div>Next refresh {{NEXT_REFRESH_DATE}} 03:00</div>
+    </div>
+  </footer>
+
+</div>
+
+</body>
+</html>
