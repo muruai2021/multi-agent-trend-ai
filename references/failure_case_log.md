@@ -92,6 +92,41 @@
   regression_test: 2026-06-20 生成的 trend-report-2026-06-20.html 已验证 4 条选题均不含第一人称、所有 evidence URL 来自 mmx search organic 结果、每条选题含 4 点逻辑依据
 ```
 
+```
+#CONFIG: 2026-06-20-002
+  date: 2026-06-20
+  type: data-source-hierarchy-upgrade
+  scope: signal-architecture
+  changes:
+    - SKILL.md frontmatter: data_sources 新增 4 个 Tier 1 主信号通道
+      + wechat-souyisou-hotlist (微信搜一搜热词榜)
+      + wechat-video-creator (视频号创作者中心)
+      + newrank-mp-index (新榜公众号指数)
+      + gsdata-mp (清博公众号数据)
+    - SKILL.md version: 1.1.0 → 1.1.1
+    - references/data-sources.md: 完全重写为 3 层架构（Tier 1 主信号通道 / Tier 2 跨平台 / Tier 3 执行）
+    - trend-report-2026-06-20.html: 信号源表格中 4 个公众号生态源状态从"待接入"提升为"信号通道"
+  reason: 用户要求把 4 个公众号生态信号源作为主信息源放入 skills
+  architecture:
+    Tier 1 · 主信号通道（公众号生态官方源）:
+      - 信号语义定义（不一定是直接 API 接入）
+      - 微信搜一搜 / 视频号 / 新榜 / 清博
+    Tier 2 · 跨平台信号源（公众号相关二级源）:
+      - 起 Tier 1 与 Tier 3 之间的桥接作用
+    Tier 3 · 采集执行层:
+      - mmx search + 本地 keyword-pool.md
+  weights:
+    微信搜一搜热词榜: 0.30 (最高)
+    视频号创作者中心: 0.25
+    新榜公众号指数: 0.20
+    清博公众号数据: 0.15
+  implementation_status:
+    - 信号通道定义: ✅ 完成（v1.1.1）
+    - Phase 1 WebFetch 接入（新榜/清博/搜一搜公开榜单）: ⏳ 待实施
+    - Phase 2 视频号替代源: ⏳ 待实施
+    - Phase 3 商业 API: ⏳ 待实施
+```
+
 ---
 
 ## 触发条件检查脚本

@@ -1,6 +1,6 @@
 ---
 name: multi-agent-trend-ai
-version: 1.1.0
+version: 1.1.1
 author: multi-agent-skills-factory
 license: Apache-2.0
 platforms:
@@ -25,19 +25,26 @@ metadata:
     output_path: current-directory
     refresh_cycle: weekly
     data_sources:
+      # Tier 1 · 主信号通道（公众号生态官方源）
+      - wechat-souyisou-hotlist      # 微信搜一搜热词榜
+      - wechat-video-creator        # 视频号创作者中心
+      - newrank-mp-index            # 新榜公众号指数
+      - gsdata-mp                   # 清博公众号数据
+      # Tier 2 · 跨平台信号源
       - wechat-search
       - wechat-mp
       - wechat-video
-      - 36kr
       - paicoding-aihot
       - tencent-cloud-dev
       - zhihu-zhuanlan
+      # Tier 3 · 采集执行层
       - mmx-search
+      - keyword-pool
     tier_colors:
-      S: "#534AB7"
-      A: "#185FA5"
-      B: "#3B6D11"
-      C: "#854F0B"
+      S: "#4A3FB0"
+      A: "#14579A"
+      B: "#2D6A1A"
+      C: "#8A5510"
     dependencies:
       - mmx-cli
       - python>=3.10
